@@ -38,7 +38,7 @@ namespace i3
             pipeClient.Write(pkg, 0, pkg.Length);
             Console.WriteLine("WROTE AND FLUSHED:"+UTF8Encoding.UTF8.GetString(pkg));
         }
-        public string Read() {
+        public (bool,UInt32,string) Read() {
             var magic = new byte[magicStr.Length];
             pipeClient.Read(magic, 0, magic.Length);
             Console.WriteLine("Got magicstr: " + UTF8Encoding.UTF8.GetString(magic));
@@ -51,7 +51,15 @@ namespace i3
             var msgType = new byte[4];
             pipeClient.Read(msgType, 0, msgType.Length);
             var uMsgType = BitConverter.ToUInt32(msgType, 0);
-            Console.WriteLine("Got msgtype: " + uMsgType);
+            var isEvent = (uMsgType >> 31) == 1;
+
+            if (isEvent) {
+                uMsgType = (uMsgType & 0x7F);
+                Console.WriteLine("Got eventType: " + uMsgType);
+            }
+            else {
+                Console.WriteLine("Got msgtype: " + uMsgType);
+            }
 
             var payload = new byte[uMsgLen];
             pipeClient.Read(payload, 0, payload.Length);
@@ -59,7 +67,7 @@ namespace i3
             var sPayload = UTF8Encoding.UTF8.GetString(payload);
             Console.WriteLine("Got payload: " + sPayload);
 
-            return sPayload;
+            return (isEvent, uMsgType, sPayload);
         }
     }
 }

@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 
 namespace i3
 {
-    public class Version
+    public class BaseMessage {}
+    public class Version : BaseMessage
     {
         public int major { get;set; }
         public int minor { get;set; }
@@ -11,10 +13,19 @@ namespace i3
         public string loaded_config_file_name { get;set; }
     }
 
-    public class Subscribe
+    public class Subscribe : BaseMessage
     {
-        public string type { get;set; }
-        public List<string> payload { get;set; }
+        public bool success { get;set; }
+    }
+
+    public class BaseEvent {}
+    public class Window : BaseEvent {
+        public string change {get;set;}
+        public Container container {get;set;}
+    }
+    public class Container {
+        public Int64 id {get;set;}
+        public string type {get;set;}
     }
 
     public enum EventType {

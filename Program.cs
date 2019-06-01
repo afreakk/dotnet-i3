@@ -1,25 +1,38 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO.Pipes;
+using System.Linq;
+using System.Threading;
+using Newtonsoft.Json;
+
 namespace i3
 {
     class Program
     {
+        static void test(BaseEvent y) {
+            var z = y as Window;
+            Console.WriteLine("Subscribe-window-event="+JsonConvert.SerializeObject(z));
+        }
         static void Main(string[] args)
         {
+            //testing..
             string address = "/run/user/1000/i3/ipc-socket.761";
             using (var pipeClient = new NamedPipeClientStream(".", address, PipeDirection.InOut))
             {
-                Console.WriteLine("Isconnected: " + pipeClient.IsConnected);
                 pipeClient.Connect();
-                Console.WriteLine("Isconnected: " + pipeClient.IsConnected);
-                Console.WriteLine("OutBufferSize: " + pipeClient.OutBufferSize);
-                Console.WriteLine("CanRead: " +pipeClient.CanRead);
-                Console.WriteLine("CanWrite: " +pipeClient.CanWrite);
                 var x = new I3Api(pipeClient);
-                for (var i=0; i < 20; i++) {
+
+                var s = new List<EventType>();
+                s.Add(EventType.window);
+                var subscribeReturn = x.Subscribe(s, test);
+                Console.WriteLine("subscribeReturn:"+JsonConvert.SerializeObject(subscribeReturn));
+
+                for (var i=0; i < 2; i++) {
                     var v = x.GetVersion();
-                    Console.WriteLine("xxx: "+v.major);
+                    Console.WriteLine("version: "+JsonConvert.SerializeObject(v));
                 }
+
+                Thread.Sleep(10000);
             }
         }
     }
