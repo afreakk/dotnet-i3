@@ -2,19 +2,19 @@ using System.Collections.Generic;
 
 namespace i3
 {
-    class Version
+    public class Version
     {
-        public int major;
-        public int minor;
-        public int patch;
-        public string human_readable;
-        public string loaded_config_file_name;
+        public int major { get;set; }
+        public int minor { get;set; }
+        public int patch { get;set; }
+        public string human_readable { get;set; }
+        public string loaded_config_file_name { get;set; }
     }
 
-    class Subscribe
+    public class Subscribe
     {
-        public string type;
-        public List<string> payload;
+        public string type { get;set; }
+        public List<string> payload { get;set; }
     }
 
     public enum EventType {
