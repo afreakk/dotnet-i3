@@ -1,23 +1,13 @@
 ﻿using System;
-using System.Text;
-using System.Net.Sockets;
-using System.Net;
-using System.IO;
 using System.IO.Pipes;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-
 namespace i3
 {
     class Program
     {
         static void Main(string[] args)
         {
-
-            string address = "/run/user/1000/i3/ipc-socket.771";
-            using (NamedPipeClientStream pipeClient =
-                new NamedPipeClientStream(".", address, PipeDirection.InOut))
+            string address = "/run/user/1000/i3/ipc-socket.761";
+            using (var pipeClient = new NamedPipeClientStream(".", address, PipeDirection.InOut))
             {
                 Console.WriteLine("Isconnected: " + pipeClient.IsConnected);
                 pipeClient.Connect();

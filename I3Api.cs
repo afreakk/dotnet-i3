@@ -9,17 +9,17 @@ namespace i3
             com = new I3IpcCommunicator(_pipeClient);
         }
         public Version GetVersion() {
-            com.write(MessageType.GetVersion, "");
-            var responsePayload = com.read();
+            com.Write(MessageType.GetVersion, "");
+            var responsePayload = com.Read();
             return JsonConvert.DeserializeObject<Version>(responsePayload);
         }
         public Subscribe Subscribe() {
-            com.write(MessageType.Subscribe, "window");
-            var responsePayload = com.read();
+            com.Write(MessageType.Subscribe, "window");
+            var responsePayload = com.Read();
             return JsonConvert.DeserializeObject<Subscribe>(responsePayload);
         }
         public string Listen() {
-            return com.read();
+            return com.Read();
         }
     }
 }
