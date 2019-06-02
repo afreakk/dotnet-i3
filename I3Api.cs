@@ -12,8 +12,8 @@ namespace i3
         private I3IpcCommunicator com;
         private Task readTask;
         private Dictionary<MessageType, AutoResetEvent> waitForMessage = new Dictionary<MessageType, AutoResetEvent>();
-        private BaseMessage message;
         private Dictionary<EventType, List<Action<BaseEvent>>> eventSubscribers = new Dictionary<EventType, List<Action<BaseEvent>>>();
+        private Dictionary<MessageType, string> messages = new Dictionary<MessageType, string>();
         public I3Api(NamedPipeClientStream _pipeClient) {
             com = new I3IpcCommunicator(_pipeClient);
             readTask = new Task(ReadAll);
@@ -26,48 +26,59 @@ namespace i3
                 eventSubscribers[eventType] = new List<Action<BaseEvent>>();
             }
         }
+        public string[] GetBarConfigs() {
+            com.Write(MessageType.GetBarConfig, "");
+            waitForMessage[MessageType.GetBarConfig].WaitOne();
+            return JsonConvert.DeserializeObject<string[]>(messages[MessageType.GetBarConfig]);
+        }
+        public Bar GetBarConfig(string bar) {
+            com.Write(MessageType.GetBarConfig, bar);
+            waitForMessage[MessageType.GetBarConfig].WaitOne();
+            return JsonConvert.DeserializeObject<Bar>(messages[MessageType.GetBarConfig]);
+        }
         public Version GetVersion() {
             com.Write(MessageType.GetVersion, "");
             waitForMessage[MessageType.GetVersion].WaitOne();
-            return message as Version;
+            return JsonConvert.DeserializeObject<Version>(messages[MessageType.GetVersion]);
         }
-        public Subscribe Subscribe(List<EventType> eventTypes, Action<BaseEvent> callback) {
-            foreach(var type in eventTypes) {
-                eventSubscribers[type].Add(callback);
+        public Subscribe Subscribe(EventType[] eventTypes, Action<BaseEvent> callback) {
+            string[] payload = new string[eventTypes.Length];
+            for(var i=0; i<eventTypes.Length; i++) {
+                eventSubscribers[eventTypes[i]].Add(callback);
+                payload[i] = Enum.GetName(typeof(EventType), eventTypes[i]);
             }
-            if (!waitForMessage.ContainsKey(MessageType.Subscribe)) {
-                waitForMessage[MessageType.Subscribe] = new AutoResetEvent(false);
-            }
-            var payload = JsonConvert.SerializeObject(eventTypes.Select(type => Enum.GetName(typeof(EventType), type)));
-            com.Write(MessageType.Subscribe, payload);
+            com.Write(MessageType.Subscribe, JsonConvert.SerializeObject(payload));
             waitForMessage[MessageType.Subscribe].WaitOne();
-            return message as Subscribe;
+            return JsonConvert.DeserializeObject<Subscribe>(messages[MessageType.Subscribe]);
         }
-        public void ReadAll() {
+        private void ReadAll() {
             while(true) {
                 var (isEvent, uMsgType, sPayload) = com.Read();
                 if (isEvent) {
-                    BaseEvent toBroadcast = null;
-                    switch ((EventType) uMsgType) {
+                    var eventType = (EventType) uMsgType;
+                    BaseEvent toBroadcast;
+                    switch (eventType) {
                         case EventType.window:
                             toBroadcast = JsonConvert.DeserializeObject<Window>(sPayload);
                             break;
+                        case EventType.output:
+                            toBroadcast = JsonConvert.DeserializeObject<Output>(sPayload);
+                            break;
+                        case EventType.workspace:
+                            toBroadcast = JsonConvert.DeserializeObject<Workspace>(sPayload);
+                            break;
+                        default:
+                            toBroadcast = null;
+                            break;
+                        
                     }
-                    foreach(var action in eventSubscribers[(EventType) uMsgType]) {
+                    foreach(var action in eventSubscribers[eventType]) {
                         action(toBroadcast);
                     }
                 }
                 else {
-                    switch ((MessageType) uMsgType) {
-                        case MessageType.GetVersion:
-                            message = JsonConvert.DeserializeObject<Version>(sPayload);
-                            waitForMessage[MessageType.GetVersion].Set();
-                            break;
-                        case MessageType.Subscribe:
-                            message = JsonConvert.DeserializeObject<Subscribe>(sPayload);
-                            waitForMessage[MessageType.Subscribe].Set();
-                            break;
-                    }
+                    messages[(MessageType) uMsgType] = sPayload;
+                    waitForMessage[(MessageType) uMsgType].Set();
                 }
             }
         }

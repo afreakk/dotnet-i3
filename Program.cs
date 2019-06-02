@@ -10,7 +10,7 @@ namespace i3
     class Program
     {
         static void test(BaseEvent y) {
-            var z = y as Window;
+            var z = y as Workspace;
             Console.WriteLine("Subscribe-window-event="+JsonConvert.SerializeObject(z));
         }
         static void Main(string[] args)
@@ -23,8 +23,8 @@ namespace i3
                 var x = new I3Api(pipeClient);
 
                 var s = new List<EventType>();
-                s.Add(EventType.window);
-                var subscribeReturn = x.Subscribe(s, test);
+                s.Add(EventType.workspace);
+                var subscribeReturn = x.Subscribe(s.ToArray(), test);
                 Console.WriteLine("subscribeReturn:"+JsonConvert.SerializeObject(subscribeReturn));
 
                 for (var i=0; i < 2; i++) {
